@@ -1,0 +1,233 @@
+COMPILER GCode
+
+   gcode_test = True
+   
+   gcode_callbacks = {}
+   gcode_callbacks_keys = []
+   
+   gcode_params = {}
+   
+   gcode_out = []
+   gcode_out_last = ""
+   
+   
+   def set_callback_dict(self, callback_dict=None):
+      self.gcode_test = False
+      
+      if callback_dict:
+         self.gcode_callbacks = callback_dict
+         self.gcode_callbacks_keys = callback_dict.keys()
+      else:
+         self.gcode_callbacks = {}
+         self.gcode_callbacks_keys = []
+   
+   
+   def get_gcode_out(self):
+      return self.gcode_out
+   
+   
+   def print_gcode_out(self):
+      for ln in self.gcode_out:
+         print ln
+   
+   
+   def _int_init(self):
+      self.gcode_params = {}
+      
+      gcode_out = []
+      gcode_out_last = ""
+        
+
+   def _int_is_callback_defined(self, key):
+      return key and key in self.gcode_callbacks_keys and self.gcode_callbacks[key] != None
+    
+    
+   def _int_call(self, key, param1=None, param2=None, param3=None):
+      foo = self.gcode_callbacks[key]
+      if key == "default":
+         key = param1
+         param1 = param2
+         param2 = param3
+         
+      if self._int_is_callback_defined("self"):
+         callback_self = self.gcode_callbacks["self"]
+         if param1 == None:
+            return foo(callback_self, key)
+         elif param2 == None:
+            return foo(callback_self, key, param1)
+         elif param3 == None:
+            return foo(callback_self, key, param1, param2)
+         else:
+            return foo(callback_self, key, param1, param2, param3)
+      else:
+         if param1 == None:
+            return foo(key)
+         elif param2 == None:
+            return foo(key, param1)
+         elif param3 == None:
+            return foo(key, param1, param2)
+         else:
+            return foo(key, param1, param2, param3)
+   
+   
+   def call(self, key, param=None):
+      if self._int_is_callback_defined(key):
+         out = self._int_call(key, param)
+         if out:
+            self.gcode_out_last += str(out)
+      elif self._int_is_callback_defined("default"):
+         out = self._int_call("default", key, param)
+         if out:
+            self.gcode_out_last += str(out)
+      elif self._int_is_callback_defined("no_callback"):
+         self._int_call("no_callback", key, param, self.getParsingPos())
+      else:
+         if key == "eol":
+            if len(self.gcode_out_last) > 0:
+               self.gcode_out.append(self.gcode_out_last)
+               self.gcode_out_last = ""
+         elif key:
+            self.gcode_out_last += " " + key
+            if param:
+               self.gcode_out_last += param
+
+
+   def set_param(self, key, param=None):
+      if self._int_is_callback_defined("set_param"):
+         self._int_call("set_param", key, param)
+      elif key and param:
+         self.gcode_params[key] = param
+
+
+   def get_param(self, key):
+      if self._int_is_callback_defined("get_param"):
+         return self._int_call("get_param", key)
+      elif key and self.gcode_params[key]:
+         return self.gcode_params[key]
+      else:
+         return 0
+
+
+IGNORECASE
+
+CHARACTERS
+  letter = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".
+  digit  = "0123456789".
+  eol    = CHR(13) .
+  lf     = CHR(10) .
+  tab    = CHR(9) .
+  nonGcodeCmdBodySym = ANY - eol .
+
+TOKENS
+  ident  = letter {letter} .
+  number = [ "+" | "-" ] digit {digit} [ "." {digit} ] .
+  param  = "#" digit {digit} .
+  nonGcodeCmdBody = "%" { nonGcodeCmdBodySym } .
+  eolTok = ( eol | lf ) { { tab } ( eol | lf ) } .
+
+COMMENTS FROM '(' TO ')'
+COMMENTS FROM ';' TO eol
+COMMENTS FROM ';' TO lf
+
+IGNORE tab 
+
+
+PRODUCTIONS
+  GCode =                                    (. 
+                                                if self.gcode_test:
+                                                   self._int_init() 
+                                             .)
+        {
+            ParamDecl
+          |
+            NonGcodeCmd
+          |
+            { GcodeCmd }
+            eolTok                           (. self.call("eol") .)
+        }
+        EOF                                  (. 
+                                                if self.gcode_test:
+                                                   self.print_gcode_out() 
+                                             .)
+        .
+        
+        
+  ParamDecl = 
+        param                                (. key = self.token.val .)
+        "="
+        Number<out num>                      (. self.set_param(key, num) .)
+        eolTok
+        .
+
+  NonGcodeCmd =
+        nonGcodeCmdBody                      (. self.call("non_gcode_cmd", self.token.val[1:]) .)
+        eolTok
+        .
+
+  GcodeCmd =                                 (.
+                                                cmd = ""
+                                                num = ""
+                                             .)
+        (
+            CmdNoMoveAloneLetter<out cmdLetter>    (. cmd = cmdLetter .)
+            [
+              Number<out num>                (. cmd += num .)
+            ]                                (. self.call(cmd) .)
+          |
+            CmdNoMoveParamLetter<out cmdLetter>    (. cmd = cmdLetter .)
+              Number<out num>                (. self.call(cmd, num) .)
+          |
+            CmdMoveLetter<out cmdLetter>     (. cmd = cmdLetter .)
+            Number<out num>                  (. self.call(cmd, num) .)
+        )
+        .
+    
+  CmdNoMoveAloneLetter<out cmdLetter> =      (. cmdLetter = "" .)
+        (
+            "G"
+          | "M"
+          | "T"
+        )                                    (. cmdLetter = self.token.val.upper() .)
+        .
+        
+  CmdNoMoveParamLetter<out cmdLetter> =      (. cmdLetter = "" .)
+        (
+            "S"
+          | "F"
+          | "P"
+          | "D"
+          | "E"
+          | "H"
+          | "L"
+          | "N"
+          | "O"
+        )                                    (. cmdLetter = self.token.val.upper() .)
+        .
+        
+  CmdMoveLetter<out cmdLetter> =            (. cmdLetter = "" .)
+        (
+            "X"
+          | "Y"
+          | "Z"
+          
+          | "A"
+          | "B"
+          | "C"
+          
+          | "U"
+          | "V"
+          | "W"
+          
+          | "I"
+          | "J"
+          | "K"
+          | "R"
+        )                                    (. cmdLetter = self.token.val.upper() .)
+        .
+        
+  Number<out num> =
+          number                             (. num =  self.token.val .)
+        | param                              (. num = self.get_param(self.token.val) .)
+        .
+        
+END GCode.
