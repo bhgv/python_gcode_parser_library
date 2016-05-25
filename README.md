@@ -1,5 +1,3 @@
-# python_gcode_parser_library
-
 # Easy to use Python Gcode parser library
 
 ## How to use
@@ -52,6 +50,9 @@ Errors.Summarize( scanner.buffer )   # output errors to the log file and to the 
 
 if Errors.count != 0:
    if_errors_present_do_something_foo() # do something if errors present
+else:
+   out_gcode = parser.get_gcode_out() # get preprocessed internal gcode list if you wish
+   parser.print_gcode_out()          # print preprocessed internal gcode list to stdout if you wish
 ```
 
 ## how to customise the parser
