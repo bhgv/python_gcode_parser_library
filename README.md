@@ -61,6 +61,6 @@ else:
 - you can use different compiling options. read the GCode_parser/bld.sh file
 
 ## docs, examples, links
-- the parser generator used here is (py-Coco/R)[https://github.com/aixp/pycoco] or (Coco/R original)[http://ssw.jku.at/coco/].
+- the parser generator used here is [py-Coco/R](https://github.com/aixp/pycoco) or [Coco/R original](http://ssw.jku.at/coco/).
 - parser generator documentation may be accessed locally in GCode_parser/tools/pycoco/documentation
 -  --//-- examples - GCode_parser/tools/pycoco/examples
