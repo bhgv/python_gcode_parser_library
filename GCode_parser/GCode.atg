@@ -134,8 +134,10 @@ IGNORE tab
 
 PRODUCTIONS
   GCode =                                    (. 
-                                                if self.gcode_test:
-                                                   self._int_init() 
+                                                #if self.gcode_test:
+                                                #   self._int_init()
+                                                self._int_init()
+                                                self.call("init") 
                                              .)
         {
             ParamDecl
@@ -146,6 +148,7 @@ PRODUCTIONS
             eolTok                           (. self.call("eol") .)
         }
         EOF                                  (. 
+                                                self.call("fini")
                                                 if self.gcode_test:
                                                    self.print_gcode_out() 
                                              .)
@@ -184,9 +187,7 @@ PRODUCTIONS
     
   CmdNoMoveAloneLetter<out cmdLetter> =      (. cmdLetter = "" .)
         (
-            "G"
-          | "M"
-          | "T"
+            "G" | "M" | "T"
         )                                    (. cmdLetter = self.token.val.upper() .)
         .
         
@@ -206,22 +207,10 @@ PRODUCTIONS
         
   CmdMoveLetter<out cmdLetter> =            (. cmdLetter = "" .)
         (
-            "X"
-          | "Y"
-          | "Z"
-          
-          | "A"
-          | "B"
-          | "C"
-          
-          | "U"
-          | "V"
-          | "W"
-          
-          | "I"
-          | "J"
-          | "K"
-          | "R"
+            "X" | "Y" | "Z"
+          | "A" | "B" | "C"
+          | "U" | "V" | "W"
+          | "I" | "J" | "K" | "R"
         )                                    (. cmdLetter = self.token.val.upper() .)
         .
         
