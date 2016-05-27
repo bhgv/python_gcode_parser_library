@@ -20,21 +20,24 @@ Errors.Init(                         # initialise Errors handler
 
 parser.set_callback_dict(            # set callback-foos for executing different g-codes and situations
   {
-    "G0": G0_callback,               # foo(key, param) should return executed g-code as string
-    "G1": G1_callback,               # foo(key, param) --//--
-    "G2": G2_callback,               # foo(key, param) --//--
+    "init": init_callback,           # foo(cmd) on_init callback
+    "fini": fini_callback,           # foo(cmd) on_finish callback
+    
+    "G0": G0_callback,               # foo(cmd, param) should return executed g-code as string
+    "G1": G1_callback,               # foo(cmd, param) --//--
+    "G2": G2_callback,               # foo(cmd, param) --//--
     # ...etc
      
-    "default": G_def_cb,             # foo(key, param) default g-codes callback
+    "default": G_def_cb,             # foo(cmd, param) default g-codes callback
    
-    "set_param": set_param_callback, # foo(key, value)
-    "get_param": get_param_callback, # foo(key) must return value or None
+    "set_param": set_param_callback, # foo(cmd, value)
+    "get_param": get_param_callback, # foo(cmd) must return value or None
     
-    "eol": New_line_callback,        # foo()
+    "eol": New_line_callback,        # foo(cmd)
     
-    "non_gcode_cmd":
+    "non_gcode_cmd": ext_cmd_callback # foo(cmd_string) non g-code cmd - "% ..cmd_string.. eol"
     
-    "no_callback": no_callback_callback, # foo(key, param, (line, row))
+    "no_callback": no_callback_callback, # foo(cmd, param, (line, row))
 
     "self": self_or_None             # self value used to call callbacks
                                      # if self_or_None is not defined or None
@@ -61,6 +64,6 @@ else:
 - you can use different compiling options. read the GCode_parser/bld.sh file
 
 ## docs, examples, links
-- the parser generator used here is [py-Coco/R](https://github.com/aixp/pycoco) or [Coco/R original](http://ssw.jku.at/coco/).
+- the parser generator used here is (py-Coco/R)[https://github.com/aixp/pycoco] or (Coco/R original)[http://ssw.jku.at/coco/].
 - parser generator documentation may be accessed locally in GCode_parser/tools/pycoco/documentation
 -  --//-- examples - GCode_parser/tools/pycoco/examples
